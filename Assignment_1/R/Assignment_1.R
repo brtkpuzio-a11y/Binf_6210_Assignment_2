@@ -127,6 +127,14 @@ data.b %>%
   ) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
+##Correlation test : provides a quantitative assessment of the relationship between geographic position and biodiversity
+df_lat <- richness.bands %>%
+  mutate(lat_mid = (as.numeric(sub("-.*", "", lat_band)) + as.numeric(sub(".*-", "", lat_band)))/2)
+
+cor_test <- cor.test(df_lat$lat_mid, df_lat$BIN_richness)
+cor_test  # ==> Gives correlation coefficient and p-value
+
+#Results: correlation coefficient (r = 0.07) and a p-value of 0.88.This means the relationship between latitude and BIN richness is very weak and statistically non-significant.The small sample size and broad confidence interval indicate limited statistical power, meaning that even if a trend exists, the available data are insufficient to confirm it.
 
 ## Graph - distribution of unique bins north of the equator by latitude  ####
 # https://ggplot2.tidyverse.org/reference/geom_histogram.html
@@ -175,4 +183,5 @@ ggplot(richness.bands, aes(x = lat_band, y = BIN_richness)) +
   ) +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_y_continuous(limits = c(0, 200))
+
 
