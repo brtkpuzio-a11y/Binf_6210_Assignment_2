@@ -20,8 +20,20 @@ library(rlang)
 # styler::style_file("Assignment_1.R")
 data.b <- read_tsv(file = "../data/water_bear.tsv")
 
+#Check for parsing issues (TA suggestion / quality check)
+parse_issues <- problems(data.b)  # Lists rows with parsing issues
+cat("Total rows with parsing issues:", nrow(parse_issues), "\n")
+head(parse_issues, 20)
 
-
+#Summary statistics for exploratory analysis to gain an understanding of data structure
+summary_stats <- data.b %>%
+  summarise(
+    n_total = n(),
+    n_bins = n_distinct(bin_uri),
+    n_species = n_distinct(species, na.rm = TRUE),
+    ratio_bins_species = n_bins / n_species
+  )
+print(summary_stats)
 
 # Data manipulation + cleaning ####
 # The Coordinates in the dataset columns had square brackets, a comma, and were not separated into 2 columns by latitude and longitude. This code removes the special characters and separates the coordinates into 2 columns and recognizes the values as numeric. The original cood column remains in the dataset for reproducabiltiy
@@ -36,8 +48,10 @@ data.b$lat <- as.numeric(data.b$lat)
 data.b$long <- as.numeric(data.b$long)
 
 ## Graph - Specimen collection site on Globe ####
-# Raw data inputted into the map to identify collection hotspots and investigate distribution patterns by region. Collection site does not equal distribution patterns. This graph was inspired by the maps package using stackoverflow for help.  https://stackoverflow.com/questions/23130604/plot-coordinates-on-map
-world_map <- map_data("world")
+# Map plotting with cleaned data to avoid NA errors. The map visualizes specimen collection sites across the globe, overlaying points on country polygons to show geographic distribution.
+# Filter first, then pass to ggplot
+data_clean <- data.b %>% 
+  filter(!is.na(lat) & !is.na(long))
 
 ggplot() +
   geom_polygon(
@@ -45,7 +59,8 @@ ggplot() +
     fill = "lightblue", color = "gray70", alpha = 0.5
   ) +
   geom_point(
-    data = data.b, aes(x = long, y = lat),
+    data = data_clean,  # <- now guaranteed to have lat/long
+    aes(x = long, y = lat),
     color = "red", alpha = 0.5
   ) +
   labs(title = "Specimen Locations on Globe", x = "Longitude", y = "Latitude") +
