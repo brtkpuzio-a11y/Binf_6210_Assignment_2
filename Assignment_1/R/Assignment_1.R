@@ -10,6 +10,7 @@ library(dplyr)
 library(ggplot2)
 library(maps)
 library(styler)
+library(rlang)
 
 ## Housekeeping ####
 
@@ -108,25 +109,31 @@ bin_country %>%
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
+  ## Define reusable histogram function ####
 
+plot_lat_hist <- function(df, bin_col = "bin_uri", lat_filter = 0, title_suffix = "", unique_only = TRUE) {
+  bin_sym <- rlang::sym(bin_col)
+  
+  df_plot <- df
+  if (unique_only) {
+    df_plot <- df_plot %>% distinct(!!bin_sym, .keep_all = TRUE)
+  }
+  
+  df_plot %>%
+    filter(lat > lat_filter) %>%
+    ggplot(aes(x = lat)) +
+    geom_histogram(bins = 100, fill = "blue", color = "white") +
+    labs(
+      title = paste("Distribution of", title_suffix),
+      x = "Latitude (°)", y = "Frequency"
+    ) +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5))
+  
 ## Graph - Distribution of BIN's by Latitude North of the Equator ####
-# https://ggplot2.tidyverse.org/reference/geom_histogram.html
+  
+plot_lat_hist(data.b, title_suffix = "BINs by Latitude (North of Equator)", unique_only = FALSE)
 
-data.b %>%
-  filter(!is.na(lat), lat > 0) %>%
-  ggplot(aes(x = lat)) +
-  geom_histogram(
-    bins = 100,
-    fill = "blue",
-    color = "white"
-  ) +
-  labs(
-    title = "Distribution of BINs by Latitude (North of Equator)",
-    x = "Latitude (°N)",
-    y = "Frequency"
-  ) +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
 ##Correlation test : provides a quantitative assessment of the relationship between geographic position and biodiversity
 df_lat <- richness.bands %>%
   mutate(lat_mid = (as.numeric(sub("-.*", "", lat_band)) + as.numeric(sub(".*-", "", lat_band)))/2)
@@ -137,23 +144,7 @@ cor_test  # ==> Gives correlation coefficient and p-value
 #Results: correlation coefficient (r = 0.07) and a p-value of 0.88.This means the relationship between latitude and BIN richness is very weak and statistically non-significant.The small sample size and broad confidence interval indicate limited statistical power, meaning that even if a trend exists, the available data are insufficient to confirm it.
 
 ## Graph - distribution of unique bins north of the equator by latitude  ####
-# https://ggplot2.tidyverse.org/reference/geom_histogram.html
-data.b %>%
-  distinct(bin_uri, .keep_all = TRUE) %>%
-  filter(lat > 0) %>%
-  ggplot(aes(x = lat)) +
-  geom_histogram(
-    bins = 100,
-    fill = "blue",
-    color = "white"
-  ) +
-  labs(
-    title = "Distribution of Unique BINs North of the Equator Latitude",
-    x = "Latitude (°)",
-    y = "Frequency"
-  ) +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
+plot_lat_hist(data.b, title_suffix = "Unique BINs North of the Equator Latitude", unique_only = TRUE)
 
 ## Graph - BIN richness across latitude bands north of the equator ####
 
@@ -183,5 +174,6 @@ ggplot(richness.bands, aes(x = lat_band, y = BIN_richness)) +
   ) +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_y_continuous(limits = c(0, 200))
+
 
 
